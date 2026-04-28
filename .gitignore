@@ -1,24 +1,2 @@
-# OpenSpec
 .opencode/
-
-# Build outputs
-*.vcd
-*.log
-*.fst
-*.wlf
-
-#仿真波形和报告
-sim/
-work/
-work_v/
-
-# Editor/IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
+openspec/
