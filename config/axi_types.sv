@@ -1,6 +1,5 @@
 package axi_types_pkg;
 
-    import axi_config_pkg::*;
 
     typedef enum bit [1:0] {
         OKAY   = 2'b00,  // Normal successful transaction
