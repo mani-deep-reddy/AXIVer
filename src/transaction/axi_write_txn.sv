@@ -1,1 +1,119 @@
-// TODO: Write transaction structure
+`ifndef AXI_WRITE_TXN_SV
+`define AXI_WRITE_TXN_SV
+
+import axi_config_pkg::*;
+import axi_types_pkg::*;
+import axi_transaction_pkg::*;
+import utils_pkg::*;
+
+package axi_write_txn_pkg;
+
+    class axi_write_txn extends axi_transaction;
+        // AW channel fields
+        logic [ADDR_WIDTH-1:0] addr;  // start address
+        logic [ID_WIDTH-1:0] id;      // transaction ID
+        logic [7:0] len;              // burst length (AXI encoded)
+        logic [2:0] size;             // bytes per beat (AXI encoded)
+        burst_t burst;                // burst type
+        lock_t lock;                  // lock type
+        cache_t cache;                // cache attributes
+        prot_t prot;                  // protection type
+        logic [3:0] qos;              // quality of service
+        logic [4:0] region;           // region identifier
+
+        // W channel fields
+        logic [DATA_WIDTH-1:0] data[]; // write data beats
+        logic [STRB_WIDTH-1:0] strb[]; // byte strobes per beat
+
+        // B channel field
+        resp_t resp; // write response
+
+        function new(int txn_id);
+            super.new(txn_id);
+            this.len = 8'h0;
+            this.size = 3'h0;
+            this.burst = FIXED;
+            this.lock = NORMAL;
+            this.cache = '{default: 1'b0};
+            this.prot = '{default: 1'b0};
+            this.qos = 4'h0;
+            this.region = 5'h0;
+            this.resp = OKAY;
+        endfunction
+
+        // Deep copy of write transaction including data[] and strb[] arrays.
+        function axi_transaction clone();
+            axi_write_txn copy;
+            int i;
+            copy = new(this.txn_id);
+            copy.addr = this.addr;
+            copy.id = this.id;
+            copy.len = this.len;
+            copy.size = this.size;
+            copy.burst = this.burst;
+            copy.lock = this.lock;
+            copy.cache = this.cache;
+            copy.prot = this.prot;
+            copy.qos = this.qos;
+            copy.region = this.region;
+            copy.resp = this.resp;
+            copy.data = new[this.data.size()];
+            copy.strb = new[this.strb.size()];
+            for (i = 0; i < this.data.size(); i++) begin
+                copy.data[i] = this.data[i];
+            end
+            for (i = 0; i < this.strb.size(); i++) begin
+                copy.strb[i] = this.strb[i];
+            end
+            return copy;
+        endfunction
+
+        // Compare all fields of two write transactions. Returns 1 if match, 0 otherwise.
+        function bit compare(axi_transaction other);
+            axi_write_txn rhs;
+            int i;
+
+            if (!$cast(rhs, other)) return 1'b0;
+            if (this.addr !== rhs.addr) return 1'b0;
+            if (this.id !== rhs.id) return 1'b0;
+            if (this.len !== rhs.len) return 1'b0;
+            if (this.size !== rhs.size) return 1'b0;
+            if (this.burst !== rhs.burst) return 1'b0;
+            if (this.lock !== rhs.lock) return 1'b0;
+            if (this.cache !== rhs.cache) return 1'b0;
+            if (this.prot !== rhs.prot) return 1'b0;
+            if (this.qos !== rhs.qos) return 1'b0;
+            if (this.region !== rhs.region) return 1'b0;
+            if (this.resp !== rhs.resp) return 1'b0;
+            if (this.data.size() !== rhs.data.size()) return 1'b0;
+            if (this.strb.size() !== rhs.strb.size()) return 1'b0;
+            for (i = 0; i < this.data.size(); i++) begin
+                if (this.data[i] !== rhs.data[i]) return 1'b0;
+            end
+            for (i = 0; i < this.strb.size(); i++) begin
+                if (this.strb[i] !== rhs.strb[i]) return 1'b0;
+            end
+            return 1'b1;
+        endfunction
+
+        // Debug dump of write transaction fields and data beats.
+        function void print();
+            int i;
+            $display("=== WRITE TXN [ID=%0d] ===", this.txn_id);
+            /* verilator lint_off WIDTHEXPAND */
+            $display("  addr = %s", to_hex_string_0x(this.addr));
+            $display("  id   = %0d", this.id);
+            $display("  len  = %0d, size = %0d, burst = %s", this.len, this.size, this.burst.name());
+            $display("  data[%0d beats]:", this.data.size());
+            for (i = 0; i < this.data.size(); i++) begin
+                $display("    [%0d] data = %s, strb = %h", i, to_hex_string_0x(this.data[i]), this.strb[i]);
+            end
+            /* verilator lint_on WIDTHEXPAND */
+            $display("  resp = %s", this.resp.name());
+            $display("=======================");
+        endfunction
+    endclass
+
+endpackage
+
+`endif

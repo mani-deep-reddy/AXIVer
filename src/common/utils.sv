@@ -23,14 +23,14 @@ package utils_pkg;
 
     // Convert value to hex string without "0x" prefix.
     function automatic string to_hex_string(
-        input longint unsigned value
+        input logic [63:0] value
     );
         to_hex_string = $sformatf("%0h", value);
     endfunction
 
     // Convert value to hex string with "0x" prefix.
     function automatic string to_hex_string_0x(
-        input longint unsigned value
+        input logic [63:0] value
     );
         to_hex_string_0x = $sformatf("0x%0h", value);
     endfunction
