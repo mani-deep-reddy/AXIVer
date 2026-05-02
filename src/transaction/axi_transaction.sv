@@ -4,9 +4,9 @@
 package axi_transaction_pkg;
 
     virtual class axi_transaction;
-        int txn_id; // unique identifier for tracking and debug
+        int unsigned txn_id; // unique identifier for tracking and debug
 
-        function new(int id);
+        function new(int unsigned id);
             this.txn_id = id;
         endfunction
 

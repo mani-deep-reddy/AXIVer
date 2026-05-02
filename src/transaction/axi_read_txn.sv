@@ -25,7 +25,7 @@ package axi_read_txn_pkg;
         logic [DATA_WIDTH-1:0] data[]; // read data beats
         resp_t resp[];                 // response per beat
 
-        function new(int txn_id);
+        function new(int unsigned txn_id);
             super.new(txn_id);
             this.len = 8'h0;
             this.size = 3'h0;
@@ -69,6 +69,8 @@ package axi_read_txn_pkg;
             int i;
 
             if (!$cast(rhs, other)) return 1'b0;
+            if (this.data.size() != this.resp.size()) return 1'b0;
+            if (rhs.data.size()  != rhs.resp.size()) return 1'b0;
             if (this.addr !== rhs.addr) return 1'b0;
             if (this.id !== rhs.id) return 1'b0;
             if (this.len !== rhs.len) return 1'b0;

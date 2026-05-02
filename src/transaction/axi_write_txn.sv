@@ -28,7 +28,7 @@ package axi_write_txn_pkg;
         // B channel field
         resp_t resp; // write response
 
-        function new(int txn_id);
+        function new(int unsigned txn_id);
             super.new(txn_id);
             this.len = 8'h0;
             this.size = 3'h0;
@@ -74,6 +74,8 @@ package axi_write_txn_pkg;
             int i;
 
             if (!$cast(rhs, other)) return 1'b0;
+            if (this.data.size() != this.strb.size()) return 1'b0;
+            if (rhs.data.size()  != rhs.strb.size()) return 1'b0;
             if (this.addr !== rhs.addr) return 1'b0;
             if (this.id !== rhs.id) return 1'b0;
             if (this.len !== rhs.len) return 1'b0;

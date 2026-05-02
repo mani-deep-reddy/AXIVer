@@ -17,7 +17,7 @@ package axi_stream_txn_pkg;
         // Optional user sideband per beat (only meaningful when USER_WIDTH > 0)
         logic [USER_WIDTH-1:0] user[];
 
-        function new(int txn_id);
+        function new(int unsigned txn_id);
             super.new(txn_id);
         endfunction
 
@@ -55,6 +55,14 @@ package axi_stream_txn_pkg;
             int i;
 
             if (!$cast(rhs, other)) return 1'b0;
+            if (this.data.size() != this.keep.size()) return 1'b0;
+            if (this.data.size() != this.last.size()) return 1'b0;
+            if (rhs.data.size()  != rhs.keep.size()) return 1'b0;
+            if (rhs.data.size()  != rhs.last.size()) return 1'b0;
+            if (USER_WIDTH > 0) begin
+                if (this.data.size() != this.user.size()) return 1'b0;
+                if (rhs.data.size()  != rhs.user.size()) return 1'b0;
+            end
             if (this.data.size() !== rhs.data.size()) return 1'b0;
             if (this.keep.size() !== rhs.keep.size()) return 1'b0;
             if (this.last.size() !== rhs.last.size()) return 1'b0;
