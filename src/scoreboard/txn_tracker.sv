@@ -3,6 +3,8 @@
 
 import axi_config_pkg::*;
 import axi_transaction_pkg::*;
+import axi_write_txn_pkg::*;
+import axi_read_txn_pkg::*;
 import logger_pkg::*;
 
 // Protocol-aware transaction alignment and buffering engine.
@@ -12,7 +14,7 @@ class txn_tracker #(
     type T = axi_transaction
 );
 
-    // AXI4 Full buffers: per-ID associative arrays with FIFO queues for ordering.
+    // AXI4 Full buffers: per-protocol-ID associative arrays with FIFO queues for ordering.
     T exp_full[int][$];
     T act_full[int][$];
 
@@ -20,11 +22,22 @@ class txn_tracker #(
     T exp_fifo[$];
     T act_fifo[$];
 
+    // Extract AXI protocol ID from transaction via $cast. Returns txn_id as fallback.
+    // Only used in Full mode where transactions are write_txn or read_txn (both have .id).
+    local function int unsigned get_protocol_id(T txn);
+        axi_write_txn write_txn;
+        axi_read_txn  read_txn;
+        if ($cast(write_txn, txn)) return write_txn.id;
+        if ($cast(read_txn,  txn)) return read_txn.id;
+        return txn.txn_id; // fallback for stream or unknown types
+    endfunction
+
     // Add expected transaction to the appropriate buffer based on protocol mode.
     function void add_expected(T txn);
         if (AXI_TYPE_PARAM == AXI_FULL) begin
-            exp_full[txn.txn_id].push_back(txn);
-            logger::log(DEBUG, $sformatf("Tracker: expected TXN:%0d buffered (Full)", txn.txn_id));
+            int unsigned id = get_protocol_id(txn);
+            exp_full[id].push_back(txn);
+            logger::log(DEBUG, $sformatf("Tracker: expected ID:%0d buffered (Full)", id));
         end else begin
             exp_fifo.push_back(txn);
             logger::log(DEBUG, $sformatf("Tracker: expected TXN:%0d buffered (FIFO)", txn.txn_id));
@@ -34,8 +47,9 @@ class txn_tracker #(
     // Add actual transaction to the appropriate buffer based on protocol mode.
     function void add_actual(T txn);
         if (AXI_TYPE_PARAM == AXI_FULL) begin
-            act_full[txn.txn_id].push_back(txn);
-            logger::log(DEBUG, $sformatf("Tracker: actual TXN:%0d buffered (Full)", txn.txn_id));
+            int unsigned id = get_protocol_id(txn);
+            act_full[id].push_back(txn);
+            logger::log(DEBUG, $sformatf("Tracker: actual ID:%0d buffered (Full)", id));
         end else begin
             act_fifo.push_back(txn);
             logger::log(DEBUG, $sformatf("Tracker: actual TXN:%0d buffered (FIFO)", txn.txn_id));
