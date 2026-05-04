@@ -17,6 +17,9 @@ module axi_stream_checks #(
 );
 // verilator lint_on ASCRANGE
 
+    // Reset Behavior Rules: TVALID deasserted during active reset.
+    rst_tvalid_low: assert property(@(posedge ACLK) !ARESETn |-> !TVALID);
+
     // Handshake Rule: TVALID must remain asserted until TREADY.
     property p_tvalid_hold;
         @(posedge ACLK) disable iff (!ARESETn)

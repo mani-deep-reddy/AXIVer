@@ -65,7 +65,9 @@ module axi_assertions #(
     // Total transaction counters for channel relationship checks.
     int unsigned aw_txn_count;
     int unsigned w_txn_count;
+    int unsigned b_txn_count;
     int unsigned ar_txn_count;
+    int unsigned r_txn_count;
 
     // Per-ID counters for ordering checks.
     int unsigned aw_id_count[int];
@@ -79,7 +81,9 @@ module axi_assertions #(
         if (!ARESETn) begin
             aw_txn_count <= 0;
             w_txn_count <= 0;
+            b_txn_count <= 0;
             ar_txn_count <= 0;
+            r_txn_count <= 0;
             aw_id_count.delete();
             b_id_count.delete();
             ar_id_count.delete();
@@ -93,7 +97,7 @@ module axi_assertions #(
                 w_txn_count <= w_txn_count + 1;
             end
             if (BVALID && BREADY) begin
-                b_id_count[BID] <= b_id_count[BID] + 1;
+                b_txn_count <= b_txn_count + 1;
             end
             if (ARVALID && ARREADY) begin
                 ar_txn_count <= ar_txn_count + 1;
@@ -101,6 +105,7 @@ module axi_assertions #(
             end
             if (RVALID && RREADY) begin
                 if (!HAS_BURST || RLAST) begin
+                    r_txn_count <= r_txn_count + 1;
                     r_id_count[RID] <= r_id_count[RID] + 1;
                 end
             end
@@ -192,13 +197,14 @@ module axi_assertions #(
     no_xz_bresp:   assert property(@(posedge ACLK) disable iff (!ARESETn) BVALID |-> $isunknown(BRESP) == 0);
     no_xz_rresp:   assert property(@(posedge ACLK) disable iff (!ARESETn) RVALID |-> $isunknown(RRESP) == 0);
 
-    // Channel Relationship Rules: B response requires prior AW+W, R response requires prior AR.
-    b_follows_aw_w: assert property(@(posedge ACLK) disable iff (!ARESETn)
-        (BVALID && BREADY) |-> (aw_txn_count > 0 && w_txn_count > 0)
+    // Channel Relationship Rules: responses must not exceed requests.
+    // Completed write requests = min(AW, W) since both channels are required.
+    b_not_exceed_writes: assert property(@(posedge ACLK) disable iff (!ARESETn)
+        (BVALID && BREADY) |-> (b_txn_count <= ((aw_txn_count < w_txn_count) ? aw_txn_count : w_txn_count))
     );
 
-    r_follows_ar: assert property(@(posedge ACLK) disable iff (!ARESETn)
-        (RVALID && RREADY) |-> (ar_txn_count > 0)
+    r_not_exceed_reads: assert property(@(posedge ACLK) disable iff (!ARESETn)
+        (RVALID && RREADY) |-> (r_txn_count <= ar_txn_count)
     );
 
     // Ordering Rules: same-ID responses must not exceed same-ID requests (gated on ID_WIDTH).
