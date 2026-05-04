@@ -199,12 +199,13 @@ module axi_assertions #(
 
     // Channel Relationship Rules: responses must not exceed requests.
     // Completed write requests = min(AW, W) since both channels are required.
+    // Use pre-increment comparison (+1) since counters update in the same cycle.
     b_not_exceed_writes: assert property(@(posedge ACLK) disable iff (!ARESETn)
-        (BVALID && BREADY) |-> (b_txn_count <= ((aw_txn_count < w_txn_count) ? aw_txn_count : w_txn_count))
+        (BVALID && BREADY) |-> (b_txn_count + 1 <= ((aw_txn_count < w_txn_count) ? aw_txn_count : w_txn_count))
     );
 
     r_not_exceed_reads: assert property(@(posedge ACLK) disable iff (!ARESETn)
-        (RVALID && RREADY) |-> (r_txn_count <= ar_txn_count)
+        (RVALID && RREADY) |-> (r_txn_count + 1 <= ar_txn_count)
     );
 
     // Ordering Rules: same-ID responses must not exceed same-ID requests (gated on ID_WIDTH).
@@ -212,11 +213,11 @@ module axi_assertions #(
     generate
         if (ID_WIDTH > 0) begin : gen_ordering
             b_id_order: assert property(@(posedge ACLK) disable iff (!ARESETn)
-                (BVALID && BREADY) |-> (b_id_count[BID] <= aw_id_count[BID])
+                (BVALID && BREADY) |-> (b_id_count[BID] + 1 <= aw_id_count[BID])
             );
 
             r_id_order: assert property(@(posedge ACLK) disable iff (!ARESETn)
-                (RVALID && RREADY && (!HAS_BURST || RLAST)) |-> (r_id_count[RID] <= ar_id_count[RID])
+                (RVALID && RREADY && (!HAS_BURST || RLAST)) |-> (r_id_count[RID] + 1 <= ar_id_count[RID])
             );
         end
     endgenerate
