@@ -7,6 +7,11 @@ import axi_read_txn_pkg::*;
 import hooks_pkg::*;
 import logger_pkg::*;
 import scoreboard_pkg::*;
+import ref_model_pkg::*;
+
+// Include user extension files at compilation-unit scope.
+`include "user_extensions/custom_compare/user_compare.sv"
+`include "user_extensions/coverage/user_coverage.sv"
 
 class axi_env;
 
@@ -15,6 +20,11 @@ class axi_env;
     axi_slave_transactor  slave;
     axi_monitor           monitor;
     axi_scoreboard        scoreboard;
+
+    // User extension handles.
+    axi_ref_model   ref_model;
+    user_compare    compare;
+    user_coverage   coverage;
 
     // Virtual interface for distribution to components.
     virtual axi_if vif;
@@ -32,10 +42,15 @@ class axi_env;
     // Build phase — construct all component instances.
     function void build();
         logger::log(INFO, "Environment: build phase");
-        this.master    = new();
-        this.slave     = new();
-        this.monitor   = new();
+        this.master     = new();
+        this.slave      = new();
+        this.monitor    = new();
         this.scoreboard = new();
+
+        // User extensions.
+        this.ref_model  = new();
+        this.compare    = new();
+        this.coverage   = new();
     endfunction
 
     // Connect phase — distribute interfaces and wire analysis ports.
@@ -57,8 +72,23 @@ class axi_env;
         // The monitor publishes observed transactions; the scoreboard
         // receives them as "actual" data for comparison.
         monitor.get_analysis_port().connect(scoreboard.get_actual_subscriber());
+        logger::log(INFO, "Environment: monitor → scoreboard(actual) connected");
 
-        logger::log(INFO, "Environment: monitor → scoreboard connected");
+        // Wire reference model analysis port to scoreboard expected subscriber.
+        // The reference model publishes expected transactions for reads;
+        // the scoreboard receives them as "expected" data for comparison.
+        monitor.get_analysis_port().connect(ref_model);
+        ref_model.get_analysis_port().connect(scoreboard.get_expected_subscriber());
+        logger::log(INFO, "Environment: monitor → ref_model → scoreboard(expected) connected");
+
+        // Set user comparator as scoreboard's comparison implementation.
+        scoreboard.set_compare_if(compare);
+        logger::log(INFO, "Environment: scoreboard comparator set");
+
+        // Wire monitor analysis port to coverage hook.
+        // Every observed transaction is sampled for functional coverage.
+        monitor.get_analysis_port().connect(coverage);
+        logger::log(INFO, "Environment: monitor → coverage connected");
     endfunction
 
     // Run phase — launch all active components concurrently.
