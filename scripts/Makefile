@@ -1,20 +1,21 @@
-SIMULATOR ?= vcs
-TOP ?= tb_top
-WORK_DIR ?= work
-COMPILE_ARGS ?=
-SIM_ARGS ?=
+XRUN = xrun
+XRUN_FLAGS = -sv -f filelist.f -access +rwc -timescale 1ns/1ps
 
-.PHONY: compile run clean
-
-compile:
-	@echo "Compiling with $(SIMULATOR)..."
-	# TODO: Add simulator-specific compile commands
-
-run: compile
-	@echo "Running simulation with $(SIMULATOR)..."
-	# TODO: Add simulator-specific run commands
+.PHONY: clean compile run check all
 
 clean:
-	@echo "Cleaning build artifacts..."
-	rm -rf $(WORK_DIR)
-	# TODO: Add simulator-specific cleanup commands
+	rm -rf xrun.* *.log waves.shm
+
+compile:
+	$(XRUN) $(XRUN_FLAGS) -l compile.log
+
+run:
+	$(XRUN) -R -l run.log
+
+check:
+	grep -i "ERROR" run.log || true
+	grep -i "FATAL" run.log || true
+
+all: clean compile run check
+
+default: all

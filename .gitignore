@@ -1,3 +1,8 @@
 .opencode/
 openspec/
 PROGRESS.md
+
+# Simulation artifacts
+xrun.*
+*.log
+waves.shm
