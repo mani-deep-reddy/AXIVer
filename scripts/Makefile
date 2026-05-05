@@ -1,5 +1,5 @@
 XRUN = xrun
-XRUN_FLAGS = -sv -f filelist.f -access +rwc -timescale 1ns/1ps
+XRUN_FLAGS = $(shell . ./xrun_args.sh >/dev/null 2>&1 && echo $$XRUN_FLAGS)
 
 .PHONY: clean compile run check all
 
